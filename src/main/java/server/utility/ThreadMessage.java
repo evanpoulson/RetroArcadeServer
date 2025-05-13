@@ -1,13 +1,20 @@
 package server.utility;
 
 /**
- * Represents a message passed between threads or components within the server.
+ * Represents a structured message exchanged between server threads in the multiplayer
+ * gaming system.
  * <p>
- * Each message consists of a {@link MessageType} that identifies the purpose of the message,
- * and an optional data payload that can carry additional information.
- * This class facilitates structured and type-safe inter-thread communication.
+ * Thread messages are used to route commands and data (e.g., connection requests, player moves,
+ * game events) between different server components such as client handlers, matchmaking logic,
+ * and game sessions.
+ * <p>
+ * Each message includes a {@link MessageType} that defines the nature of the message,
+ * and a type-safe data payload of type {@code T}, which may contain game-specific data,
+ * user actions, or other contextual information.
+ *
+ * @param <T> the type of the data payload attached to this message
  */
-public class ThreadMessage {
+public class ThreadMessage<T> {
 
     /**
      * The type of the message, indicating its purpose or category.
@@ -15,9 +22,10 @@ public class ThreadMessage {
     private MessageType type;
 
     /**
-     * The data payload associated with the message. Can be {@code null} if no data is required.
+     * The data payload associated with the message. May be {@code null} for control messages
+     * that do not require additional data.
      */
-    private Object data;
+    private T data;
 
     /**
      * Constructs a new {@code ThreadMessage} with the given type and associated data.
@@ -25,7 +33,7 @@ public class ThreadMessage {
      * @param type the type of message being sent
      * @param data the data payload, or {@code null} if no data is needed
      */
-    public ThreadMessage(MessageType type, Object data) {
+    public ThreadMessage(MessageType type, T data) {
         this.type = type;
         this.data = data;
     }
@@ -54,7 +62,7 @@ public class ThreadMessage {
      *
      * @return the message's data payload, or {@code null} if none was provided
      */
-    public Object getData() {
+    public T getData() {
         return data;
     }
 }
