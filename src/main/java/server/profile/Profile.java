@@ -1,4 +1,4 @@
-package profile;
+package server.profile;
 
 public class Profile {
     private String email;
