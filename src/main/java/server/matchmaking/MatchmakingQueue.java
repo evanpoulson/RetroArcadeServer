@@ -40,7 +40,7 @@ public abstract class MatchmakingQueue {
     protected static final int DELTA_EXPAND_RATE_MS = 5_000;
 
     /** Default increment for rating delta per {@link #DELTA_EXPAND_RATE_MS}. */
-    protected static final int DELTA_EXPAND_AMOUNT = 10;
+    protected static final int DELTA_EXPAND_AMOUNT = 50;
 
     /**
      * A simple pair of players who should be matched into a game session.
