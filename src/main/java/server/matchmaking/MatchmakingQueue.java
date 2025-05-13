@@ -1,6 +1,7 @@
 package server.matchmaking;
 
 import server.player.PlayerHandler;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,60 +9,53 @@ import java.util.concurrent.ConcurrentHashMap;
  * Abstract base class representing a matchmaking queue for a specific game in the RetroArcade platform.
  * <p>
  * This class provides core queue management functionality, including tracking when players enter the queue
- * and providing a framework for subclasses to define custom matchmaking logic based on player attributes,
- * such as rating and time spent waiting.
+ * and a built-in, adaptive rating-based matching algorithm that widens over time.
  * <p>
- * Subclasses are responsible for implementing the {@link #tryMatch()} method, which contains the actual
- * matching strategy for a specific game.
+ * Subclasses may override {@link #getDeltaExpandAmount()} to tune how quickly the rating window grows.
  */
 public abstract class MatchmakingQueue {
 
     /**
      * The set of players currently in the queue.
      * <p>
-     * A {@link LinkedHashSet} is used to preserve insertion order and prevent duplicate entries.
+     * A {@link LinkedHashSet} preserves insertion order (for wait-time fairness) and prevents duplicates.
      */
     protected final Set<PlayerHandler> queue = new LinkedHashSet<>();
 
     /**
-     * Maps each player to the time (in milliseconds) when they entered the queue.
+     * Records the timestamp (in milliseconds) when each player entered the queue.
      * <p>
-     * Used to calculate how long a player has been waiting and to gradually relax matching constraints.
+     * Used to calculate wait time for adaptive rating thresholds.
      */
     protected final Map<PlayerHandler, Long> joinTimes = new ConcurrentHashMap<>();
 
-    /**
-     * The base allowed rating delta for matching players.
-     * <p>
-     * This value represents the initial strictness in rating difference when players first join the queue.
-     */
+    /** The base allowed rating delta when a player first joins. */
     protected static final int BASE_RATING_DELTA = 50;
 
     /**
-     * The rate at which the allowed rating delta expands over time, in milliseconds.
+     * Time interval (ms) after which the rating window expands.
      * <p>
-     * For example, if set to 5000 ms, the allowed rating difference increases every 5 seconds.
+     * Every {@code DELTA_EXPAND_RATE_MS}, the window grows by {@link #getDeltaExpandAmount()}.
      */
-    protected static final int DELTA_EXPAND_RATE_MS = 5000;
+    protected static final int DELTA_EXPAND_RATE_MS = 5_000;
 
-    /**
-     * The amount by which the rating delta increases every {@code DELTA_EXPAND_RATE_MS} milliseconds.
-     */
+    /** Default increment for rating delta per {@link #DELTA_EXPAND_RATE_MS}. */
     protected static final int DELTA_EXPAND_AMOUNT = 10;
 
     /**
-     * Constructs a new empty matchmaking queue.
+     * A simple pair of players who should be matched into a game session.
      */
-    public MatchmakingQueue() {
-    }
+    public static record MatchPair(PlayerHandler p1, PlayerHandler p2) { }
+
+    /** Constructs an empty matchmaking queue. */
+    public MatchmakingQueue() { }
 
     /**
-     * Adds a player to the matchmaking queue.
+     * Adds a player to the queue.
      * <p>
-     * If the player is already in the queue, this operation has no effect.
-     * Their join time is recorded at the time of insertion.
+     * Records join time on first insertion; duplicates are ignored.
      *
-     * @param player the player to be added to the queue
+     * @param player the player to enqueue
      */
     public void enqueue(PlayerHandler player) {
         if (queue.add(player)) {
@@ -70,11 +64,9 @@ public abstract class MatchmakingQueue {
     }
 
     /**
-     * Removes a player from the matchmaking queue.
-     * <p>
-     * Typically used when a player disconnects, cancels matchmaking, or has been successfully matched.
+     * Removes a player from the queue and clears their join time.
      *
-     * @param player the player to be removed from the queue
+     * @param player the player to remove
      */
     public void remove(PlayerHandler player) {
         queue.remove(player);
@@ -82,30 +74,91 @@ public abstract class MatchmakingQueue {
     }
 
     /**
-     * Returns the number of players currently waiting in the queue.
+     * Returns how many players are currently waiting.
      *
-     * @return the number of queued players
+     * @return queue size
      */
     public int size() {
         return queue.size();
     }
 
     /**
-     * Checks whether the specified player is currently in the queue.
+     * Checks if a player is in the queue.
      *
-     * @param player the player to check for presence
-     * @return {@code true} if the player is in the queue, {@code false} otherwise
+     * @param player the player to check
+     * @return {@code true} if present, {@code false} otherwise
      */
     public boolean contains(PlayerHandler player) {
         return queue.contains(player);
     }
 
     /**
-     * Attempts to match players currently in the queue.
+     * How much the allowed rating delta grows every {@link #DELTA_EXPAND_RATE_MS}.
      * <p>
-     * Subclasses must implement this method to define how players are matched based on
-     * game-specific criteria. This typically includes comparing ratings and evaluating
-     * how long each player has been waiting to progressively widen acceptable match conditions.
+     * Subclasses can override to customize per-game expansion speed.
+     *
+     * @return rating delta increment
      */
-    public abstract void tryMatch();
+    protected int getDeltaExpandAmount() {
+        return DELTA_EXPAND_AMOUNT;
+    }
+
+    /**
+     * Examines the queue and returns a list of matched player pairs based on rating and wait time.
+     * <p>
+     * The algorithm:
+     * <ol>
+     *   <li>Return immediately if fewer than two players are waiting.</li>
+     *   <li>Snapshot current players in insertion order.</li>
+     *   <li>For each player, compute an {@code allowedDelta} = {@link #BASE_RATING_DELTA}
+     *       + ((now − joinTime) / {@link #DELTA_EXPAND_RATE_MS}) × {@link #getDeltaExpandAmount()}.</li>
+     *   <li>Search forward for the first partner whose rating difference
+     *       {@code |p1.getRating() − p2.getRating()|} is ≤ {@code allowedDelta}.</li>
+     *   <li>Package each matched pair into a {@link MatchPair}, remove them from the live queue, and repeat.</li>
+     * </ol>
+     *
+     * @return non-null list of {@link MatchPair}s (empty if no matches)
+     */
+    public List<MatchPair> tryMatch() {
+        if (queue.size() < 2) {
+            return Collections.emptyList();
+        }
+
+        long now = System.currentTimeMillis();
+        List<PlayerHandler> snapshot = new ArrayList<>(queue);
+        List<MatchPair> matches = new ArrayList<>();
+        Set<PlayerHandler> matched = new HashSet<>();
+
+        for (int i = 0; i < snapshot.size(); i++) {
+            PlayerHandler p1 = snapshot.get(i);
+            if (matched.contains(p1)) continue;
+
+            long joinTime = joinTimes.getOrDefault(p1, now);
+            long waited = now - joinTime;
+            int allowedDelta = BASE_RATING_DELTA
+                    + (int)(waited / DELTA_EXPAND_RATE_MS) * getDeltaExpandAmount();
+
+            int rating1 = p1.getRating();
+
+            for (int j = i + 1; j < snapshot.size(); j++) {
+                PlayerHandler p2 = snapshot.get(j);
+                if (matched.contains(p2)) continue;
+
+                int rating2 = p2.getRating();
+                if (Math.abs(rating1 - rating2) <= allowedDelta) {
+                    matched.add(p1);
+                    matched.add(p2);
+                    queue.remove(p1);
+                    queue.remove(p2);
+                    joinTimes.remove(p1);
+                    joinTimes.remove(p2);
+                    matches.add(new MatchPair(p1, p2));
+                    break;
+                }
+            }
+        }
+
+        return matches;
+    }
 }
+
