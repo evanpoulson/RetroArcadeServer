@@ -20,7 +20,7 @@ import server.utility.ThreadMessage;
  * @param state       current lifecycle state (RUNNING, PAUSED, ENDED, etc.)
  */
 public record SessionContext(
-        String                   sessionId,
+        Integer                  sessionId,
         GameType                 gameType,
         GameSessionManager       manager,
         BlockingQueue<ThreadMessage<?>> inbox,
