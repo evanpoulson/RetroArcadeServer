@@ -5,6 +5,8 @@ import server.utility.GameType;
 
 public class GameSessionManager implements Runnable{
 
+
+
     public GameSessionManager(PlayerHandler p1, PlayerHandler p2, GameType gameType) {
 
     }

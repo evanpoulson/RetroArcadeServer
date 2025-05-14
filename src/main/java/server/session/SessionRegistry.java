@@ -1,4 +1,4 @@
-package server.management;
+package server.session;
 
 public class SessionRegistry {
 }

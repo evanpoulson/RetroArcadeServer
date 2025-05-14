@@ -38,8 +38,17 @@ public class GameCreator implements Runnable{
     }
 
     //Maybe shouldn't be void?
-    public void createGameSession(PlayerHandler p1, PlayerHandler p2, GameType gameType) {
-        GameSessionManager gameSession = new GameSessionManager(p1, p2, gameType);
-        Thread.ofVirtual().name("gameSessionManager").start(gameSession);
+    public boolean createGameSession(PlayerHandler p1, PlayerHandler p2, GameType gameType) {
+        try {
+            GameSessionManager gameSession = new GameSessionManager(p1, p2, gameType);
+            Thread.ofVirtual()
+                    .name("gameSessionManager")
+                    .start(gameSession);
+            //Should also register game sessions on the session registry, but how do we want to do that?
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
     }
 }

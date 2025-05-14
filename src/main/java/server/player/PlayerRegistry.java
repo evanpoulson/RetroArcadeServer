@@ -1,4 +1,4 @@
-package server.management;
+package server.player;
 
 public class PlayerRegistry {
 }
