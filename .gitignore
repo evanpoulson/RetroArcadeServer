@@ -14,11 +14,11 @@ src/main/resources/*.properties
 .idea/
 *.iws
 *.iml
-*.xml
 *.ipr
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+.idea/misc.xml
 
 ### Eclipse ###
 .apt_generated
