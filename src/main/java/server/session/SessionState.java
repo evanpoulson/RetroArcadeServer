@@ -7,9 +7,6 @@ public enum SessionState {
     /** Session object created but not yet started. */
     INITIALIZING,
 
-    /** Waiting for players or for the game loop to kick off. */
-    WAITING_FOR_PLAYERS,
-
     /** Actively running (moves are being processed). */
     RUNNING,
 
