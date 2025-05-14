@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Maintains an in‐memory registry of all active game sessions on the RetroArcade platform.
  * <p>
- * Provides fast lookup of {@link SessionContext} by session ID or by a participating
+ * Provides fast lookup of {@link SessionContext} by session ID or by participating
  * {@link PlayerHandler}, and supports lifecycle operations such as registration,
  * deregistration, and expiration cleanup.
  */
@@ -19,14 +19,14 @@ public class SessionRegistry {
     /**
      * Maps session IDs to their corresponding {@link SessionContext}.
      */
-    private final ConcurrentHashMap<Integer, SessionContext> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SessionContext> sessions = new ConcurrentHashMap<>();
 
     /**
      * Maps each active {@link PlayerHandler} to the session ID they are currently in.
      * <p>
      * Allows quick reverse lookup for reconnect handling.
      */
-    private final ConcurrentHashMap<PlayerHandler, Integer> playerSessionMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PlayerHandler, String> playerSessionMap = new ConcurrentHashMap<>();
 
     /**
      * Registers a new game session.
@@ -37,9 +37,10 @@ public class SessionRegistry {
      * @param context the {@link SessionContext} representing the new session
      */
     public void register(SessionContext context) {
-        sessions.put(context.sessionId(), context);
-        for (PlayerHandler p : context.participants()) {
-            playerSessionMap.put(p, context.sessionId());
+        String sid = context.getSessionID();
+        sessions.put(sid, context);
+        for (PlayerHandler p : context.getParticipants()) {
+            playerSessionMap.put(p, sid);
         }
     }
 
@@ -50,10 +51,10 @@ public class SessionRegistry {
      *
      * @param sessionId the unique ID of the session to remove
      */
-    public void deregister(Integer sessionId) {
+    public void deregister(String sessionId) {
         SessionContext ctx = sessions.remove(sessionId);
         if (ctx != null) {
-            for (PlayerHandler p : ctx.participants()) {
+            for (PlayerHandler p : ctx.getParticipants()) {
                 playerSessionMap.remove(p);
             }
         }
@@ -65,7 +66,7 @@ public class SessionRegistry {
      * @param sessionId the session's unique identifier
      * @return an {@link Optional} containing the context if found, or empty if not registered
      */
-    public Optional<SessionContext> getBySessionId(Integer sessionId) {
+    public Optional<SessionContext> getBySessionId(String sessionId) {
         return Optional.ofNullable(sessions.get(sessionId));
     }
 
@@ -78,7 +79,7 @@ public class SessionRegistry {
      * @return an {@link Optional} containing the context if the player is in a session, or empty otherwise
      */
     public Optional<SessionContext> getByPlayer(PlayerHandler player) {
-        Integer sid = playerSessionMap.get(player);
+        String sid = playerSessionMap.get(player);
         return sid == null ? Optional.empty() : getBySessionId(sid);
     }
 
@@ -111,12 +112,18 @@ public class SessionRegistry {
      */
     public void purgeExpired(Duration maxAge) {
         Instant cutoff = Instant.now().minus(maxAge);
-        for (Map.Entry<Integer, SessionContext> entry : sessions.entrySet()) {
+        for (Iterator<Map.Entry<String, SessionContext>> it = sessions.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, SessionContext> entry = it.next();
             SessionContext ctx = entry.getValue();
-            if (ctx.startTime().isBefore(cutoff)) {
-                deregister(ctx.sessionId());
+            if (ctx.getStartTime().isBefore(cutoff)) {
+                // remove from sessions and clean up reverse mappings
+                it.remove();
+                for (PlayerHandler p : ctx.getParticipants()) {
+                    playerSessionMap.remove(p);
+                }
             }
         }
     }
 }
+
 

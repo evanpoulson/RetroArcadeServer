@@ -19,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class SessionContext {
 
     /** Uniquely identifies this session. */
-    private final Integer sessionID;
+    private final String sessionID;
 
     /** The game being played (TicTacToe, ConnectFour, Checkers). */
     private final GameType gameType;
@@ -40,7 +40,7 @@ public class SessionContext {
     private SessionState state;
 
     /** The identifier of the winning player, or {@code null} if the game is unfinished or a draw. */
-    private Integer winner;
+    private String winner;
 
     /**
      * Constructs a new session context.
@@ -50,7 +50,7 @@ public class SessionContext {
      * @param manager      the {@link GameSessionManager} responsible for this session
      * @param participants the set of {@link PlayerHandler}s in this session
      */
-    public SessionContext(Integer sessionID,
+    public SessionContext(String sessionID,
                           GameType gameType,
                           GameSessionManager manager,
                           Set<PlayerHandler> participants) {
@@ -63,7 +63,7 @@ public class SessionContext {
     }
 
     /** @return the unique session ID */
-    public Integer getSessionID() {
+    public String getSessionID() {
         return sessionID;
     }
 
@@ -98,7 +98,7 @@ public class SessionContext {
     }
 
     /** @return the winner’s player ID, or {@code null} if none yet */
-    public Integer getWinner() {
+    public String getWinner() {
         return winner;
     }
 
@@ -116,7 +116,7 @@ public class SessionContext {
      *
      * @param winner the winning player’s ID, or {@code null} for a draw
      */
-    public void setWinner(Integer winner) {
+    public void setWinner(String winner) {
         this.winner = winner;
     }
 
