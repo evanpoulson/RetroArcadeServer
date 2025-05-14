@@ -42,13 +42,13 @@ public class DatabaseConnector {
     public static Connection connect() {
         if (connection == null) {
             try {
-                loadConfiguration("db-config-test.properties");
+                loadConfiguration("db-config.properties");
                 connection = DriverManager.getConnection(URL, USER, PASSWORD);
                 // TODO: log?
-                //log("DatabaseConnector: Connected to the database.");
+                System.err.println("DatabaseConnector: Connected to the database.");
             } catch (SQLException e) {
                 // TODO: log?
-                //log("DatabaseConnector: Database connection failed: " + e.getMessage());
+                System.err.println("DatabaseConnector: Database connection failed: " + e.getMessage());
             }
         }
         return connection;
