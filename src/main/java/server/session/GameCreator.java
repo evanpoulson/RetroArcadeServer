@@ -4,6 +4,8 @@ import server.matchmaking.MatchmakingManager;
 import server.player.PlayerHandler;
 import server.utility.GameType;
 
+import java.util.Set;
+
 public class GameCreator implements Runnable{
     private final MatchmakingManager matchmakingManager;
 
@@ -40,7 +42,15 @@ public class GameCreator implements Runnable{
     //Maybe shouldn't be void?
     public boolean createGameSession(PlayerHandler p1, PlayerHandler p2, GameType gameType) {
         try {
-            GameSessionManager gameSession = new GameSessionManager(p1, p2, gameType);
+
+            GameSessionManager gameSession = new GameSessionManager();
+
+            String sessionID = p1.getID() + ":" + p2.getID();
+            Set<PlayerHandler> participants = Set.of(p1, p2);
+
+            SessionContext context = new SessionContext(sessionID, gameType, gameSession, participants);
+            gameSession.setContext(context);
+
             Thread.ofVirtual()
                     .name("gameSessionManager")
                     .start(gameSession);

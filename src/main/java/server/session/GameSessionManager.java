@@ -5,10 +5,17 @@ import server.utility.GameType;
 
 public class GameSessionManager implements Runnable{
 
+    private SessionContext context;
 
+    public GameSessionManager() {
+    }
 
-    public GameSessionManager(PlayerHandler p1, PlayerHandler p2, GameType gameType) {
+    public SessionContext getContext() {
+        return context;
+    }
 
+    public void setContext(SessionContext context) {
+        this.context = context;
     }
 
     @Override
