@@ -26,6 +26,7 @@ public record SessionContext(
         BlockingQueue<ThreadMessage<?>> inbox,
         Set<PlayerHandler>       participants,
         Instant                  startTime,
-        SessionState             state
+        SessionState             state,
+        Integer                  winner
 ) {}
 
