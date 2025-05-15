@@ -10,7 +10,7 @@ import java.util.Set;
  * Responsible for spawning new game sessions and routing players
  * into matchmaking on the RetroArcade server.
  * <p>
- * Implements a virtual‐thread “game loop” that periodically pulls
+ * Implements a virtual‐thread "game loop" that periodically pulls
  * completed match pairs and creates sessions for them.
  */
 public class GameCreator implements Runnable {
@@ -66,15 +66,14 @@ public class GameCreator implements Runnable {
         try {
             GameSessionManager gameSession = new GameSessionManager();
 
-            String sessionID = p1.getID() + ":" + p2.getID();
             Set<PlayerHandler> participants = Set.of(p1, p2);
 
             SessionContext context =
-                    new SessionContext(sessionID, gameType, gameSession, participants);
+                    new SessionContext(gameType, gameSession, participants);
             gameSession.setContext(context);
 
             Thread.ofVirtual()
-                    .name("gameSessionManager-" + sessionID)
+                    .name("gameSessionManager-" + context.getSessionID())
                     .start(gameSession);
 
             SessionRegistry sessionReg = SessionRegistry.getInstance();

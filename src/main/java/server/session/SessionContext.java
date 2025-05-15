@@ -13,13 +13,14 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Holds all of the runtime state for one live game session on the RetroArcade platform.
  * <p>
- * Tracks the session’s unique identifier, game type, managing controller, participants,
+ * Tracks the session's unique identifier, game type, managing controller, participants,
  * incoming message queue, timing, lifecycle state, and eventual winner.
  */
 public class SessionContext {
 
     /** Uniquely identifies this session. */
-    private final String sessionID;
+    private final int sessionID;
+    private static final java.util.concurrent.atomic.AtomicInteger SESSION_ID_GENERATOR = new java.util.concurrent.atomic.AtomicInteger(1);
 
     /** The game being played (TicTacToe, ConnectFour, Checkers). */
     private final GameType gameType;
@@ -30,7 +31,7 @@ public class SessionContext {
     /** The player handlers participating in this session. */
     private final Set<PlayerHandler> participants;
 
-    /** Incoming message queue for this session’s game loop. */
+    /** Incoming message queue for this session's game loop. */
     private final BlockingQueue<ThreadMessage<?>> inbox = new LinkedBlockingQueue<>();
 
     /** Timestamp when this session was created—used for duration and timeout checks. */
@@ -45,16 +46,14 @@ public class SessionContext {
     /**
      * Constructs a new session context.
      *
-     * @param sessionID    unique ID for this session
      * @param gameType     which game type this session is for
      * @param manager      the {@link GameSessionManager} responsible for this session
      * @param participants the set of {@link PlayerHandler}s in this session
      */
-    public SessionContext(String sessionID,
-                          GameType gameType,
+    public SessionContext(GameType gameType,
                           GameSessionManager manager,
                           Set<PlayerHandler> participants) {
-        this.sessionID    = sessionID;
+        this.sessionID    = SESSION_ID_GENERATOR.getAndIncrement();
         this.gameType     = gameType;
         this.manager      = manager;
         this.participants = participants;
@@ -63,7 +62,7 @@ public class SessionContext {
     }
 
     /** @return the unique session ID */
-    public String getSessionID() {
+    public int getSessionID() {
         return sessionID;
     }
 
@@ -72,7 +71,7 @@ public class SessionContext {
         return gameType;
     }
 
-    /** @return the manager driving this session’s game logic */
+    /** @return the manager driving this session's game logic */
     public GameSessionManager getManager() {
         return manager;
     }
@@ -97,7 +96,7 @@ public class SessionContext {
         return state;
     }
 
-    /** @return the winner’s player ID, or {@code null} if none yet */
+    /** @return the winner's player ID, or {@code null} if none yet */
     public String getWinner() {
         return winner;
     }
@@ -114,7 +113,7 @@ public class SessionContext {
     /**
      * Records the winner of the session.
      *
-     * @param winner the winning player’s ID, or {@code null} for a draw
+     * @param winner the winning player's ID, or {@code null} for a draw
      */
     public void setWinner(String winner) {
         this.winner = winner;
