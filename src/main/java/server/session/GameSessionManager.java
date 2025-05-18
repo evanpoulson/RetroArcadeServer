@@ -133,22 +133,22 @@ public class GameSessionManager implements Runnable {
 
     /**
      * Checks if the message is from the player whose turn it is.
-     * Only game-related messages are checked; system messages (like PAUSE, RESUME)
-     * are allowed from any player.
+     * System messages and game state updates can come from any player.
+     * Only game moves are restricted to the current player.
      * 
      * @param message The message to check
-     * @return true if the message is from the current player or is a system message
+     * @return true if the message is from the current player or is a system/game state message
      */
     private boolean isMessageFromCurrentPlayer(ThreadMessage<?> message) {
-        // System messages can come from any player
-        if (message.getType() == MessageType.PAUSE_REQUEST || 
-            message.getType() == MessageType.RESUME_REQUEST || 
-            message.getType() == MessageType.DISCONNECT) {
-            return true;
-        }
-        
-        // For game messages, check if they're from the current player
-        return message.getPlayerSender() == gameController.getCurrentPlayer();
+        // System messages and game state updates can come from any player
+        return switch (message.getType()) {
+            case PAUSE_REQUEST, RESUME_REQUEST, DISCONNECT, ERROR,
+                 GAME_PAUSED, GAME_RESUMED, GAME_WON, GAME_DRAWN,
+                 GAME_STATE_UPDATE, YOUR_TURN, OTHER_PLAYER_TURN,
+                 NOT_YOUR_TURN -> true;
+            case MOVE_MADE -> message.getPlayerSender() == gameController.getCurrentPlayer();
+            default -> false;
+        };
     }
 
     private void handleDisconnect(ThreadMessage<?> message) {
@@ -164,7 +164,7 @@ public class GameSessionManager implements Runnable {
             pausedBy = message.getPlayerSender();
             // Notify all players about pause
             for (PlayerHandler player : context.getParticipants()) {
-                sendMessageToPlayer(player, new ThreadMessage<>(MessageType.GAME_PAUSED, this, null));
+                sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.GAME_PAUSED, this, null));
             }
         }
     }
@@ -177,7 +177,7 @@ public class GameSessionManager implements Runnable {
             pausedBy = null;
             // Notify all players about resume
             for (PlayerHandler player : context.getParticipants()) {
-                sendMessageToPlayer(player, new ThreadMessage<>(MessageType.GAME_RESUMED, this, null));
+                sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.GAME_RESUMED, this, null));
             }
         }
     }
@@ -189,12 +189,12 @@ public class GameSessionManager implements Runnable {
             context.setWinner(winner.getID());
             // Notify all players about the winner
             for (PlayerHandler player : context.getParticipants()) {
-                sendMessageToPlayer(player, new ThreadMessage<>(MessageType.GAME_WON, this, winner));
+                sendMessageToPlayer(player, new ThreadMessage<PlayerHandler>(MessageType.GAME_WON, this, winner));
             }
         } else {
             // Notify all players about the draw
             for (PlayerHandler player : context.getParticipants()) {
-                sendMessageToPlayer(player, new ThreadMessage<>(MessageType.GAME_DRAWN, this, null));
+                sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.GAME_DRAWN, this, null));
             }
         }
     }
@@ -206,9 +206,9 @@ public class GameSessionManager implements Runnable {
         PlayerHandler currentPlayer = gameController.getCurrentPlayer();
         for (PlayerHandler player : context.getParticipants()) {
             if (player == currentPlayer) {
-                sendMessageToPlayer(player, new ThreadMessage<>(MessageType.YOUR_TURN, this, null));
+                sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.YOUR_TURN, this, null));
             } else {
-                sendMessageToPlayer(player, new ThreadMessage<>(MessageType.OTHER_PLAYER_TURN, this, currentPlayer));
+                sendMessageToPlayer(player, new ThreadMessage<PlayerHandler>(MessageType.OTHER_PLAYER_TURN, this, currentPlayer));
             }
         }
     }
@@ -217,14 +217,14 @@ public class GameSessionManager implements Runnable {
      * Sends a "not your turn" message to a player.
      */
     private void sendNotYourTurnMessage(PlayerHandler player) {
-        sendMessageToPlayer(player, new ThreadMessage<>(MessageType.NOT_YOUR_TURN, this, null));
+        sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.NOT_YOUR_TURN, this, null));
     }
 
     /**
      * Sends an error message to a player.
      */
     private void sendErrorToPlayer(PlayerHandler player, String errorMessage) {
-        sendMessageToPlayer(player, new ThreadMessage<>(MessageType.ERROR, this, errorMessage));
+        sendMessageToPlayer(player, new ThreadMessage<String>(MessageType.ERROR, this, errorMessage));
     }
 
     /**
