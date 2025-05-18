@@ -11,16 +11,45 @@ import java.util.Map;
 /**
  * Controller for the Tic Tac Toe game implementation.
  * Manages the game state, validates moves, and determines game outcomes.
+ * 
+ * Game Rules:
+ * 1. Two players take turns placing their pieces (X and O) on a 3x3 board
+ * 2. First player to get three of their pieces in a row (horizontally, vertically, or diagonally) wins
+ * 3. If all cells are filled and no player has won, the game is a draw
+ * 
+ * Move Format:
+ * - Moves are represented as int[2] arrays containing [row, col] coordinates
+ * - Coordinates are 0-based (0-2 for both row and column)
+ * - The top-left cell is [0,0], bottom-right is [2,2]
  */
 public class TicTacToeController extends AbstractGameController {
+    /** The size of the game board (3x3) */
     private static final int BOARD_SIZE = 3;
+    
+    /** The game board, represented as a 2D array of characters */
     private char[][] board;
+    
+    /** Character representing an empty cell */
     private static final char EMPTY = ' ';
+    
+    /** Character representing player X's piece */
     private static final char X = 'X';
+    
+    /** Character representing player O's piece */
     private static final char O = 'O';
+    
+    /** Map of players to their assigned pieces (X or O) */
     private final Map<PlayerHandler, Character> playerPieces;
+    
+    /** Counter for the number of moves made in the game */
     private int moveCount;
 
+    /**
+     * Constructs a new Tic Tac Toe game controller.
+     * 
+     * @param players The set of players participating in the game
+     * @throws IllegalArgumentException if the number of players is not exactly 2
+     */
     public TicTacToeController(Set<PlayerHandler> players) {
         super(players);
         if (players.size() != 2) {
@@ -31,6 +60,10 @@ public class TicTacToeController extends AbstractGameController {
         this.moveCount = 0;
     }
 
+    /**
+     * Initializes the game state for a new session.
+     * Sets up an empty board and assigns X and O pieces to players.
+     */
     @Override
     public void initializeGame() {
         super.initializeGame();
@@ -48,6 +81,22 @@ public class TicTacToeController extends AbstractGameController {
         moveCount = 0;
     }
 
+    /**
+     * Processes a move made by a player.
+     * Validates the move and updates the game state accordingly.
+     * 
+     * @param player The player making the move
+     * @param moveData The move data as an int[2] array [row, col]
+     * @return true if the move was valid and processed successfully
+     * @throws IllegalArgumentException if:
+     *         - The move data is not an int array
+     *         - The move coordinates are invalid
+     *         - The cell is already occupied
+     *         - The player is not part of this game
+     * @throws IllegalStateException if:
+     *         - The game is over
+     *         - The game is paused
+     */
     @Override
     public boolean processMove(PlayerHandler player, Object moveData) {
         // Validate game state
@@ -103,11 +152,23 @@ public class TicTacToeController extends AbstractGameController {
         return true;
     }
 
+    /**
+     * Gets the current state of the game board.
+     * 
+     * @return The 2D char array representing the current board state
+     */
     @Override
     public Object getGameState() {
         return board;
     }
 
+    /**
+     * Handles a message received from a player.
+     * Currently only processes MOVE_MADE messages.
+     * 
+     * @param message The message to process
+     * @return true if the message was handled successfully, false otherwise
+     */
     @Override
     public boolean handleMessage(ThreadMessage<?> message) {
         if (message.getType() != MessageType.MOVE_MADE) {
@@ -139,6 +200,7 @@ public class TicTacToeController extends AbstractGameController {
 
     /**
      * Checks if the last move resulted in a win.
+     * Checks the row, column, and diagonals (if applicable) of the last move.
      * 
      * @param lastRow The row of the last move
      * @param lastCol The column of the last move
@@ -196,6 +258,7 @@ public class TicTacToeController extends AbstractGameController {
 
     /**
      * Checks if the board is full (draw condition).
+     * Uses the move counter for efficiency.
      * 
      * @return true if the board is full
      */
@@ -203,6 +266,10 @@ public class TicTacToeController extends AbstractGameController {
         return moveCount == BOARD_SIZE * BOARD_SIZE;
     }
 
+    /**
+     * Resets the game state to start a new game with the same players.
+     * Clears the board and resets the move counter.
+     */
     @Override
     public void resetGame() {
         super.resetGame();
