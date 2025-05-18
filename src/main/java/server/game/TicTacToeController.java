@@ -19,11 +19,16 @@ public class TicTacToeController extends AbstractGameController {
     private static final char X = 'X';
     private static final char O = 'O';
     private final Map<PlayerHandler, Character> playerPieces;
+    private int moveCount;
 
     public TicTacToeController(Set<PlayerHandler> players) {
         super(players);
+        if (players.size() != 2) {
+            throw new IllegalArgumentException("TicTacToe requires exactly 2 players");
+        }
         this.board = new char[BOARD_SIZE][BOARD_SIZE];
         this.playerPieces = new HashMap<>();
+        this.moveCount = 0;
     }
 
     @Override
@@ -40,26 +45,33 @@ public class TicTacToeController extends AbstractGameController {
         PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
         playerPieces.put(playerArray[0], X);
         playerPieces.put(playerArray[1], O);
-    }
-
-    /**
-     * Gets the piece assigned to a specific player.
-     * 
-     * @param player The player to get the piece for
-     * @return The character representing the player's piece (X or O)
-     */
-    public char getPlayerPiece(PlayerHandler player) {
-        return playerPieces.get(player);
+        moveCount = 0;
     }
 
     @Override
     public boolean processMove(PlayerHandler player, Object moveData) {
+        // Validate game state
+        if (gameOver) {
+            throw new IllegalStateException("Cannot make moves after game is over");
+        }
+        if (isPaused) {
+            throw new IllegalStateException("Cannot make moves while game is paused");
+        }
+
+        // Validate player
+        if (!players.contains(player)) {
+            throw new IllegalArgumentException("Player is not part of this game");
+        }
         if (!validatePlayerTurn(player)) {
             return false;
         }
 
-        if (!(moveData instanceof int[] move) || move.length != 2) {
-            return false;
+        // Validate move data
+        if (!(moveData instanceof int[] move)) {
+            throw new IllegalArgumentException("Move data must be an int array");
+        }
+        if (move.length != 2) {
+            throw new IllegalArgumentException("Move data must contain exactly 2 elements [row, col]");
         }
 
         int row = move[0];
@@ -67,16 +79,17 @@ public class TicTacToeController extends AbstractGameController {
 
         // Validate move coordinates
         if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) {
-            return false;
+            throw new IllegalArgumentException("Move coordinates must be between 0 and " + (BOARD_SIZE - 1));
         }
 
         // Check if cell is empty
         if (board[row][col] != EMPTY) {
-            return false;
+            throw new IllegalArgumentException("Cell is already occupied");
         }
 
         // Make the move
-        board[row][col] = (player == currentPlayer) ? X : O;
+        board[row][col] = playerPieces.get(player);
+        moveCount++;
 
         // Check for win or draw
         if (checkWin(row, col)) {
@@ -97,10 +110,31 @@ public class TicTacToeController extends AbstractGameController {
 
     @Override
     public boolean handleMessage(ThreadMessage<?> message) {
-        if (message.getType() == MessageType.MOVE_MADE) {
-            return processMove(message.getPlayerSender(), message.getData());
+        if (message.getType() != MessageType.MOVE_MADE) {
+            return false;
         }
-        return false;
+
+        try {
+            return processMove(message.getPlayerSender(), message.getData());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // Log the error
+            System.err.println("Error processing move: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets the piece assigned to a specific player.
+     * 
+     * @param player The player to get the piece for
+     * @return The character representing the player's piece (X or O)
+     * @throws IllegalArgumentException if the player is not part of this game
+     */
+    public char getPlayerPiece(PlayerHandler player) {
+        if (!players.contains(player)) {
+            throw new IllegalArgumentException("Player is not part of this game");
+        }
+        return playerPieces.get(player);
     }
 
     /**
@@ -166,13 +200,12 @@ public class TicTacToeController extends AbstractGameController {
      * @return true if the board is full
      */
     private boolean isBoardFull() {
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
-                if (board[i][j] == EMPTY) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return moveCount == BOARD_SIZE * BOARD_SIZE;
+    }
+
+    @Override
+    public void resetGame() {
+        super.resetGame();
+        moveCount = 0;
     }
 } 
