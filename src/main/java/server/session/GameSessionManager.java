@@ -135,17 +135,18 @@ public class GameSessionManager implements Runnable {
      * Checks if the message is from the player whose turn it is.
      * System messages and game state updates can come from any player.
      * Only game moves are restricted to the current player.
+     * Any player can pause the game, but only the player who paused it can resume.
      * 
      * @param message The message to check
      * @return true if the message is from the current player or is a system/game state message
      */
     private boolean isMessageFromCurrentPlayer(ThreadMessage<?> message) {
-        // System messages and game state updates can come from any player
         return switch (message.getType()) {
-            case PAUSE_REQUEST, RESUME_REQUEST, DISCONNECT, ERROR,
+            case PAUSE_REQUEST, DISCONNECT, ERROR,
                  GAME_PAUSED, GAME_RESUMED, GAME_WON, GAME_DRAWN,
                  GAME_STATE_UPDATE, YOUR_TURN, OTHER_PLAYER_TURN,
                  NOT_YOUR_TURN -> true;
+            case RESUME_REQUEST -> message.getPlayerSender() == pausedBy;
             case MOVE_MADE -> message.getPlayerSender() == gameController.getCurrentPlayer();
             default -> false;
         };
