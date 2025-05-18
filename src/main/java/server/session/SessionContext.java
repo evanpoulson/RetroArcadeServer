@@ -41,7 +41,7 @@ public class SessionContext {
     private SessionState state;
 
     /** The identifier of the winning player, or {@code null} if the game is unfinished or a draw. */
-    private String winner;
+    private Integer winner;
 
     /**
      * Constructs a new session context.
@@ -97,7 +97,7 @@ public class SessionContext {
     }
 
     /** @return the winner's player ID, or {@code null} if none yet */
-    public String getWinner() {
+    public Integer getWinner() {
         return winner;
     }
 
@@ -115,7 +115,7 @@ public class SessionContext {
      *
      * @param winner the winning player's ID, or {@code null} for a draw
      */
-    public void setWinner(String winner) {
+    public void setWinner(Integer winner) {
         this.winner = winner;
     }
 
