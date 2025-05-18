@@ -1,6 +1,7 @@
 package server.session;
 
 import server.game.GameController;
+import server.game.TicTacToeController;
 import server.player.PlayerHandler;
 import server.utility.GameType;
 import server.utility.MessageType;
@@ -8,6 +9,8 @@ import server.utility.ThreadMessage;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Map;
+import java.util.HashMap;
 
 public class GameSessionManager implements Runnable {
     private SessionContext context;
@@ -28,6 +31,19 @@ public class GameSessionManager implements Runnable {
         // Initialize the appropriate game controller based on game type
         this.gameController = createGameController(context.getGameType());
         this.gameController.initializeGame();
+        
+        // Send initial game state and piece assignments to players
+        for (PlayerHandler player : context.getParticipants()) {
+            Map<String, Object> gameInfo = new HashMap<>();
+            gameInfo.put("gameState", gameController.getGameState());
+            
+            if (gameController instanceof TicTacToeController) {
+                gameInfo.put("playerPiece", ((TicTacToeController)gameController).getPlayerPiece(player));
+            }
+            
+            sendMessageToPlayer(player, new ThreadMessage<Map<String, Object>>(MessageType.GAME_STATE_UPDATE, this, gameInfo));
+        }
+        
         // Notify players about initial turn
         notifyTurnChange();
     }
@@ -69,15 +85,18 @@ public class GameSessionManager implements Runnable {
                         if (!gameController.handleMessage(message)) {
                             // Handle invalid message
                             sendErrorToPlayer(message.getPlayerSender(), "Invalid move");
-                        }
-                        
-                        // Check if game is over
-                        if (gameController.isGameOver()) {
-                            handleGameOver();
-                            break;
                         } else {
-                            // Notify players about turn change
-                            notifyTurnChange();
+                            // Valid move was made, broadcast updated game state
+                            broadcastGameState();
+                            
+                            // Check if game is over
+                            if (gameController.isGameOver()) {
+                                handleGameOver();
+                                break;
+                            } else {
+                                // Notify players about turn change
+                                notifyTurnChange();
+                            }
                         }
                     } else {
                         // Message from wrong player - notify them
@@ -94,6 +113,21 @@ public class GameSessionManager implements Runnable {
         } finally {
             // Cleanup
             SessionRegistry.getInstance().deregister(context.getSessionID());
+        }
+    }
+
+    /**
+     * Broadcasts the current game state to all players.
+     */
+    private void broadcastGameState() {
+        Map<String, Object> gameInfo = new HashMap<>();
+        gameInfo.put("gameState", gameController.getGameState());
+        
+        for (PlayerHandler player : context.getParticipants()) {
+            if (gameController instanceof TicTacToeController) {
+                gameInfo.put("playerPiece", ((TicTacToeController)gameController).getPlayerPiece(player));
+            }
+            sendMessageToPlayer(player, new ThreadMessage<Map<String, Object>>(MessageType.GAME_STATE_UPDATE, this, gameInfo));
         }
     }
 
