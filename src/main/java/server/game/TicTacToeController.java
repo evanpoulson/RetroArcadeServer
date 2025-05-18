@@ -5,6 +5,8 @@ import server.utility.ThreadMessage;
 import server.utility.MessageType;
 
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Controller for the Tic Tac Toe game implementation.
@@ -16,10 +18,12 @@ public class TicTacToeController extends AbstractGameController {
     private static final char EMPTY = ' ';
     private static final char X = 'X';
     private static final char O = 'O';
+    private final Map<PlayerHandler, Character> playerPieces;
 
     public TicTacToeController(Set<PlayerHandler> players) {
         super(players);
         this.board = new char[BOARD_SIZE][BOARD_SIZE];
+        this.playerPieces = new HashMap<>();
     }
 
     @Override
@@ -31,6 +35,21 @@ public class TicTacToeController extends AbstractGameController {
                 board[i][j] = EMPTY;
             }
         }
+        
+        // Assign pieces to players
+        PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
+        playerPieces.put(playerArray[0], X);
+        playerPieces.put(playerArray[1], O);
+    }
+
+    /**
+     * Gets the piece assigned to a specific player.
+     * 
+     * @param player The player to get the piece for
+     * @return The character representing the player's piece (X or O)
+     */
+    public char getPlayerPiece(PlayerHandler player) {
+        return playerPieces.get(player);
     }
 
     @Override
@@ -78,7 +97,7 @@ public class TicTacToeController extends AbstractGameController {
 
     @Override
     public boolean handleMessage(ThreadMessage<?> message) {
-        if (message.getType() == MessageType.GAME_MOVE) {
+        if (message.getType() == MessageType.MOVE_MADE) {
             return processMove(message.getPlayerSender(), message.getData());
         }
         return false;
