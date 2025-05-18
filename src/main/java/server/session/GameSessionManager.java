@@ -209,7 +209,7 @@ public class GameSessionManager implements Runnable {
             if (player == currentPlayer) {
                 sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.YOUR_TURN, this, null));
             } else {
-                sendMessageToPlayer(player, new ThreadMessage<PlayerHandler>(MessageType.OTHER_PLAYER_TURN, this, currentPlayer));
+                sendMessageToPlayer(player, new ThreadMessage<Void>(MessageType.OTHER_PLAYER_TURN, this, null));
             }
         }
     }
