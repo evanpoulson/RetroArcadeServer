@@ -59,7 +59,6 @@ public class ConnectFourController extends AbstractGameController {
         if (players.size() != 2) {
             throw new IllegalArgumentException("Connect Four requires exactly 2 players");
         }
-        this.board = new char[ROWS][COLS];
         this.playerPieces = new HashMap<>();
         this.moveCount = 0;
     }
@@ -86,6 +85,46 @@ public class ConnectFourController extends AbstractGameController {
     }
 
     /**
+     * Initializes the game board.
+     * Sets up a 6x7 grid with all cells empty.
+     */
+    @Override
+    protected void initializeBoard() {
+        board = new char[ROWS][COLS];
+        for (int i = 0; i < ROWS; i++) {
+            for (int j = 0; j < COLS; j++) {
+                board[i][j] = EMPTY;
+            }
+        }
+    }
+
+    /**
+     * Gets the piece character for player 1 (Red).
+     */
+    @Override
+    protected char getPlayer1Piece() {
+        return RED;
+    }
+
+    /**
+     * Gets the piece character for player 2 (Blue).
+     */
+    @Override
+    protected char getPlayer2Piece() {
+        return BLUE;
+    }
+
+    /**
+     * Gets the total number of cells on the board.
+     * 
+     * @return The total number of cells (ROWS * COLS)
+     */
+    @Override
+    public int getBoardSize() {
+        return ROWS * COLS;
+    }
+
+    /**
      * Processes a move made by a player.
      * Validates the move and updates the game state accordingly.
      * 
@@ -103,19 +142,9 @@ public class ConnectFourController extends AbstractGameController {
      */
     @Override
     public boolean processMove(PlayerHandler player, Object moveData) {
-        // Validate game state
-        if (gameOver) {
-            throw new IllegalStateException("Cannot make moves after game is over");
-        }
-        if (isPaused) {
-            throw new IllegalStateException("Cannot make moves while game is paused");
-        }
-
-        // Validate player
-        if (!players.contains(player)) {
-            throw new IllegalArgumentException("Player is not part of this game");
-        }
-        if (!validatePlayerTurn(player)) {
+        // Validate game state and player
+        validateGameState();
+        if (!validatePlayer(player)) {
             return false;
         }
 
@@ -136,8 +165,8 @@ public class ConnectFourController extends AbstractGameController {
         int row = findLowestEmptyRow(column);
         
         // Make the move
-        board[row][column] = playerPieces.get(player);
-        moveCount++;
+        board[row][column] = getPlayerPiece(player);
+        incrementMoveCount();
 
         // Check for win or draw
         if (checkWin(row, column)) {
@@ -276,16 +305,6 @@ public class ConnectFourController extends AbstractGameController {
         }
 
         return false;
-    }
-
-    /**
-     * Checks if the board is full (draw condition).
-     * Uses the move counter for efficiency.
-     * 
-     * @return true if the board is full
-     */
-    private boolean isBoardFull() {
-        return moveCount == ROWS * COLS;
     }
 
     /**
