@@ -55,6 +55,7 @@ public class PlayerHandler {
      * @param thread the new GameSessionManagerThread
      */
     public synchronized void setGameSessionManagerThread(Thread thread) {
+        //TODO: this should be the session id, because that's how we lookup using the session registry.
         synchronized (gameSessionLock) {
             // Update the gameSessionManagerThread then notify gameSessionLock
             gameSessionManagerThread = thread;
