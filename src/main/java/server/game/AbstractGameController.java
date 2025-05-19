@@ -2,8 +2,11 @@ package server.game;
 
 import server.player.PlayerHandler;
 import server.utility.ThreadMessage;
+import server.utility.MessageType;
 
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Abstract base class that implements common functionality for all game controllers.
@@ -14,6 +17,8 @@ import java.util.Set;
  * 2. Player turn tracking
  * 3. Winner tracking
  * 4. Common validation rules
+ * 5. Board management
+ * 6. Move counting
  * 
  * Subclasses should:
  * 1. Implement game-specific move validation and processing
@@ -37,6 +42,18 @@ public abstract class AbstractGameController implements GameController {
     /** Flag indicating if the game is currently paused */
     protected boolean isPaused;
 
+    /** The game board, represented as a 2D array of characters */
+    protected char[][] board;
+    
+    /** Map of players to their assigned pieces */
+    protected final Map<PlayerHandler, Character> playerPieces;
+    
+    /** Counter for the number of moves made in the game */
+    protected int moveCount;
+    
+    /** Character representing an empty cell */
+    protected static final char EMPTY = ' ';
+
     /**
      * Constructs a new game controller with the given set of players.
      * 
@@ -51,6 +68,8 @@ public abstract class AbstractGameController implements GameController {
         this.gameOver = false;
         this.winner = null;
         this.isPaused = false;
+        this.playerPieces = new HashMap<>();
+        this.moveCount = 0;
     }
 
     /**
@@ -65,6 +84,80 @@ public abstract class AbstractGameController implements GameController {
         gameOver = false;
         winner = null;
         isPaused = false;
+        resetMoveCount();
+        initializeBoard();
+        assignPieces();
+    }
+
+    /**
+     * Initializes the game board.
+     * Must be implemented by subclasses to set up their specific board.
+     */
+    protected abstract void initializeBoard();
+
+    /**
+     * Gets the piece character for player 1.
+     * Must be implemented by subclasses to define their piece characters.
+     */
+    protected abstract char getPlayer1Piece();
+
+    /**
+     * Gets the piece character for player 2.
+     * Must be implemented by subclasses to define their piece characters.
+     */
+    protected abstract char getPlayer2Piece();
+
+    /**
+     * Assigns pieces to players.
+     * First player gets player 1's piece, second player gets player 2's piece.
+     */
+    protected void assignPieces() {
+        PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
+        playerPieces.put(playerArray[0], getPlayer1Piece());
+        playerPieces.put(playerArray[1], getPlayer2Piece());
+    }
+
+    /**
+     * Resets the move counter to zero.
+     */
+    protected void resetMoveCount() {
+        moveCount = 0;
+    }
+
+    /**
+     * Increments the move counter.
+     */
+    protected void incrementMoveCount() {
+        moveCount++;
+    }
+
+    /**
+     * Validates the current game state.
+     * 
+     * @throws IllegalStateException if the game is over or paused
+     */
+    protected boolean validateGameState() {
+        if (gameOver) {
+            throw new IllegalStateException("Cannot make moves after game is over");
+        }
+        if (isPaused) {
+            throw new IllegalStateException("Cannot make moves while game is paused");
+        }
+        return true;
+    }
+
+    /**
+     * Validates that the given player is allowed to make a move.
+     * 
+     * @param player The player attempting to make a move
+     * @throws IllegalArgumentException if the player is not part of this game
+     * @return true if the player can move, false otherwise
+     */
+    protected boolean validatePlayer(PlayerHandler player) {
+        if (!players.contains(player)) {
+            throw new IllegalArgumentException("Player is not part of this game");
+        }
+        return validatePlayerTurn(player);
     }
 
     /**
@@ -95,6 +188,30 @@ public abstract class AbstractGameController implements GameController {
     @Override
     public PlayerHandler getWinner() {
         return winner;
+    }
+
+    /**
+     * Gets the current state of the game board.
+     * 
+     * @return The 2D char array representing the current board state
+     */
+    @Override
+    public Object getGameState() {
+        return board;
+    }
+
+    /**
+     * Gets the piece assigned to a specific player.
+     * 
+     * @param player The player to get the piece for
+     * @return The character representing the player's piece
+     * @throws IllegalArgumentException if the player is not part of this game
+     */
+    public char getPlayerPiece(PlayerHandler player) {
+        if (!players.contains(player)) {
+            throw new IllegalArgumentException("Player is not part of this game");
+        }
+        return playerPieces.get(player);
     }
 
     /**
@@ -159,5 +276,45 @@ public abstract class AbstractGameController implements GameController {
      */
     protected boolean validatePlayerTurn(PlayerHandler player) {
         return !gameOver && !isPaused && player == currentPlayer;
+    }
+
+    /**
+     * Checks if the board is full (draw condition).
+     * Uses the move counter for efficiency.
+     * 
+     * @return true if the board is full
+     */
+    public boolean isBoardFull() {
+        return moveCount == getBoardSize();
+    }
+
+    /**
+     * Gets the total number of cells on the board.
+     * Must be implemented by subclasses to return their board size.
+     * 
+     * @return The total number of cells (rows * columns)
+     */
+    public abstract int getBoardSize();
+
+    /**
+     * Handles a message received from a player.
+     * Currently only processes MOVE_MADE messages.
+     * 
+     * @param message The message to process
+     * @return true if the message was handled successfully, false otherwise
+     */
+    @Override
+    public boolean handleMessage(ThreadMessage<?> message) {
+        if (message.getType() != MessageType.MOVE_MADE) {
+            return false;
+        }
+
+        try {
+            return processMove(message.getPlayerSender(), message.getData());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // Log the error
+            System.err.println("Error processing move: " + e.getMessage());
+            return false;
+        }
     }
 } 
