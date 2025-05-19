@@ -55,7 +55,6 @@ public class TicTacToeController extends AbstractGameController {
         if (players.size() != 2) {
             throw new IllegalArgumentException("TicTacToe requires exactly 2 players");
         }
-        this.board = new char[BOARD_SIZE][BOARD_SIZE];
         this.playerPieces = new HashMap<>();
         this.moveCount = 0;
     }
@@ -82,6 +81,46 @@ public class TicTacToeController extends AbstractGameController {
     }
 
     /**
+     * Initializes the game board.
+     * Sets up a 3x3 grid with all cells empty.
+     */
+    @Override
+    protected void initializeBoard() {
+        board = new char[BOARD_SIZE][BOARD_SIZE];
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                board[i][j] = EMPTY;
+            }
+        }
+    }
+
+    /**
+     * Gets the piece character for player 1 (X).
+     */
+    @Override
+    protected char getPlayer1Piece() {
+        return X;
+    }
+
+    /**
+     * Gets the piece character for player 2 (O).
+     */
+    @Override
+    protected char getPlayer2Piece() {
+        return O;
+    }
+
+    /**
+     * Gets the total number of cells on the board.
+     * 
+     * @return The total number of cells (BOARD_SIZE * BOARD_SIZE)
+     */
+    @Override
+    public int getBoardSize() {
+        return BOARD_SIZE * BOARD_SIZE;
+    }
+
+    /**
      * Processes a move made by a player.
      * Validates the move and updates the game state accordingly.
      * 
@@ -99,19 +138,9 @@ public class TicTacToeController extends AbstractGameController {
      */
     @Override
     public boolean processMove(PlayerHandler player, Object moveData) {
-        // Validate game state
-        if (gameOver) {
-            throw new IllegalStateException("Cannot make moves after game is over");
-        }
-        if (isPaused) {
-            throw new IllegalStateException("Cannot make moves while game is paused");
-        }
-
-        // Validate player
-        if (!players.contains(player)) {
-            throw new IllegalArgumentException("Player is not part of this game");
-        }
-        if (!validatePlayerTurn(player)) {
+        // Validate game state and player
+        validateGameState();
+        if (!validatePlayer(player)) {
             return false;
         }
 
@@ -137,8 +166,8 @@ public class TicTacToeController extends AbstractGameController {
         }
 
         // Make the move
-        board[row][col] = playerPieces.get(player);
-        moveCount++;
+        board[row][col] = getPlayerPiece(player);
+        incrementMoveCount();
 
         // Check for win or draw
         if (checkWin(row, col)) {
@@ -257,22 +286,11 @@ public class TicTacToeController extends AbstractGameController {
     }
 
     /**
-     * Checks if the board is full (draw condition).
-     * Uses the move counter for efficiency.
-     * 
-     * @return true if the board is full
-     */
-    private boolean isBoardFull() {
-        return moveCount == BOARD_SIZE * BOARD_SIZE;
-    }
-
-    /**
      * Resets the game state to start a new game with the same players.
      * Clears the board and resets the move counter.
      */
     @Override
     public void resetGame() {
         super.resetGame();
-        moveCount = 0;
     }
 } 
