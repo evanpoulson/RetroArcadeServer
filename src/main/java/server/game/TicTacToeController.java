@@ -40,9 +40,6 @@ public class TicTacToeController extends AbstractGameController {
     
     /** Map of players to their assigned pieces (X or O) */
     private final Map<PlayerHandler, Character> playerPieces;
-    
-    /** Counter for the number of moves made in the game */
-    private int moveCount;
 
     /**
      * Constructs a new Tic Tac Toe game controller.
@@ -56,7 +53,6 @@ public class TicTacToeController extends AbstractGameController {
             throw new IllegalArgumentException("TicTacToe requires exactly 2 players");
         }
         this.playerPieces = new HashMap<>();
-        this.moveCount = 0;
     }
 
     /**
@@ -77,7 +73,6 @@ public class TicTacToeController extends AbstractGameController {
         PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
         playerPieces.put(playerArray[0], X);
         playerPieces.put(playerArray[1], O);
-        moveCount = 0;
     }
 
     /**
@@ -167,7 +162,6 @@ public class TicTacToeController extends AbstractGameController {
 
         // Make the move
         board[row][col] = getPlayerPiece(player);
-        incrementMoveCount();
 
         // Check for win or draw
         if (checkWin(row, col)) {

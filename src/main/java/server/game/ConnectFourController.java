@@ -44,9 +44,6 @@ public class ConnectFourController extends AbstractGameController {
     
     /** Map of players to their assigned pieces (R or B) */
     private final Map<PlayerHandler, Character> playerPieces;
-    
-    /** Counter for the number of moves made in the game */
-    private int moveCount;
 
     /**
      * Constructs a new Connect Four game controller.
@@ -60,7 +57,6 @@ public class ConnectFourController extends AbstractGameController {
             throw new IllegalArgumentException("Connect Four requires exactly 2 players");
         }
         this.playerPieces = new HashMap<>();
-        this.moveCount = 0;
     }
 
     /**
@@ -81,7 +77,6 @@ public class ConnectFourController extends AbstractGameController {
         PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
         playerPieces.put(playerArray[0], RED);
         playerPieces.put(playerArray[1], BLUE);
-        moveCount = 0;
     }
 
     /**
@@ -166,7 +161,6 @@ public class ConnectFourController extends AbstractGameController {
         
         // Make the move
         board[row][column] = getPlayerPiece(player);
-        incrementMoveCount();
 
         // Check for win or draw
         if (checkWin(row, column)) {
@@ -309,11 +303,10 @@ public class ConnectFourController extends AbstractGameController {
 
     /**
      * Resets the game state to start a new game with the same players.
-     * Clears the board and resets the move counter.
+     * Clears the board.
      */
     @Override
     public void resetGame() {
         super.resetGame();
-        moveCount = 0;
     }
 } 
