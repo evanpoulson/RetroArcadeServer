@@ -7,7 +7,7 @@ import java.sql.*;
 public class ProfileDAO {
     private static final Connection conn = DatabaseConnector.connect();
 
-    public static int registerPlayer(String username, String email, String hashedPassword) throws SQLException {
+    public static String registerPlayer(String username, String email, String hashedPassword) throws SQLException {
 
         // Prepare SQL query for storing profile into db. PreparedStatement is used to prevent SQL injection
         String query = "INSERT INTO profiles (username, email, hashed_Password) VALUES (?, ?, ?) RETURNING profile_id";
@@ -21,12 +21,12 @@ public class ProfileDAO {
             ResultSet rs = statement.executeQuery();
 
             if(rs.next()) {
-                int newPlayerID = rs.getInt("profile_id");
+                String newPlayerID = rs.getString("profile_id");
                 //log("Player " + newPlayerID + " Registered Successfully!");
                 return newPlayerID;
             } else {
                 //log("Registration failed: No ID returned.");
-                return -1;
+                return "-1";
             }
 
         } catch (SQLException e) {
