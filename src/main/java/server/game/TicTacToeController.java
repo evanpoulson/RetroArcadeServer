@@ -22,24 +22,15 @@ import java.util.Map;
  * - Coordinates are 0-based (0-2 for both row and column)
  * - The top-left cell is [0,0], bottom-right is [2,2]
  */
-public class TicTacToeController extends AbstractGameController {
+public class TicTacToeController extends AbstractGameController<TicTacToePiece> {
     /** The size of the game board (3x3) */
     private static final int BOARD_SIZE = 3;
     
-    /** The game board, represented as a 2D array of characters */
-    private char[][] board;
-    
-    /** Character representing an empty cell */
-    private static final char EMPTY = ' ';
-    
-    /** Character representing player X's piece */
-    private static final char X = 'X';
-    
-    /** Character representing player O's piece */
-    private static final char O = 'O';
+    /** The game board, represented as a 2D array of pieces */
+    private TicTacToePiece[][] board;
     
     /** Map of players to their assigned pieces (X or O) */
-    private final Map<PlayerHandler, Character> playerPieces;
+    private final Map<PlayerHandler, TicTacToePiece> playerPieces;
 
     /**
      * Constructs a new Tic Tac Toe game controller.
@@ -63,16 +54,12 @@ public class TicTacToeController extends AbstractGameController {
     public void initializeGame() {
         super.initializeGame();
         // Initialize empty board
-        for (int i = 0; i < BOARD_SIZE; i++) {
-            for (int j = 0; j < BOARD_SIZE; j++) {
-                board[i][j] = EMPTY;
-            }
-        }
+        initializeBoard();
         
         // Assign pieces to players
         PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
-        playerPieces.put(playerArray[0], X);
-        playerPieces.put(playerArray[1], O);
+        playerPieces.put(playerArray[0], TicTacToePiece.X);
+        playerPieces.put(playerArray[1], TicTacToePiece.O);
     }
 
     /**
@@ -81,28 +68,28 @@ public class TicTacToeController extends AbstractGameController {
      */
     @Override
     protected void initializeBoard() {
-        board = new char[BOARD_SIZE][BOARD_SIZE];
+        board = new TicTacToePiece[BOARD_SIZE][BOARD_SIZE];
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
-                board[i][j] = EMPTY;
+                board[i][j] = TicTacToePiece.EMPTY;
             }
         }
     }
 
     /**
-     * Gets the piece character for player 1 (X).
+     * Gets the piece for player 1 (X).
      */
     @Override
-    protected char getPlayer1Piece() {
-        return X;
+    protected TicTacToePiece getPlayer1Piece() {
+        return TicTacToePiece.X;
     }
 
     /**
-     * Gets the piece character for player 2 (O).
+     * Gets the piece for player 2 (O).
      */
     @Override
-    protected char getPlayer2Piece() {
-        return O;
+    protected TicTacToePiece getPlayer2Piece() {
+        return TicTacToePiece.O;
     }
 
     /**
@@ -113,6 +100,31 @@ public class TicTacToeController extends AbstractGameController {
     @Override
     public int getBoardSize() {
         return BOARD_SIZE * BOARD_SIZE;
+    }
+
+    /**
+     * Gets the piece assigned to a specific player.
+     * 
+     * @param player The player to get the piece for
+     * @return The character representing the player's piece (X or O)
+     * @throws IllegalArgumentException if the player is not part of this game
+     */
+    @Override
+    public char getPlayerPiece(PlayerHandler player) {
+        if (!players.contains(player)) {
+            throw new IllegalArgumentException("Player is not part of this game");
+        }
+        return playerPieces.get(player).getSymbol();
+    }
+
+    /**
+     * Gets the current state of the game board.
+     * 
+     * @return The 2D array representing the current board state
+     */
+    @Override
+    public Object getGameState() {
+        return board;
     }
 
     /**
@@ -156,12 +168,13 @@ public class TicTacToeController extends AbstractGameController {
         }
 
         // Check if cell is empty
-        if (board[row][col] != EMPTY) {
+        if (!board[row][col].isEmpty()) {
             throw new IllegalArgumentException("Cell is already occupied");
         }
 
         // Make the move
-        board[row][col] = getPlayerPiece(player);
+        board[row][col] = playerPieces.get(player);
+        incrementMoveCount();
 
         // Check for win or draw
         if (checkWin(row, col)) {
@@ -176,30 +189,6 @@ public class TicTacToeController extends AbstractGameController {
     }
 
     /**
-     * Gets the current state of the game board.
-     * 
-     * @return The 2D char array representing the current board state
-     */
-    @Override
-    public Object getGameState() {
-        return board;
-    }
-
-    /**
-     * Gets the piece assigned to a specific player.
-     * 
-     * @param player The player to get the piece for
-     * @return The character representing the player's piece (X or O)
-     * @throws IllegalArgumentException if the player is not part of this game
-     */
-    public char getPlayerPiece(PlayerHandler player) {
-        if (!players.contains(player)) {
-            throw new IllegalArgumentException("Player is not part of this game");
-        }
-        return playerPieces.get(player);
-    }
-
-    /**
      * Checks if the last move resulted in a win.
      * Checks the row, column, and diagonals (if applicable) of the last move.
      * 
@@ -208,12 +197,12 @@ public class TicTacToeController extends AbstractGameController {
      * @return true if the last move resulted in a win
      */
     private boolean checkWin(int lastRow, int lastCol) {
-        char symbol = board[lastRow][lastCol];
+        TicTacToePiece piece = board[lastRow][lastCol];
 
         // Check row
         boolean rowWin = true;
         for (int col = 0; col < BOARD_SIZE; col++) {
-            if (board[lastRow][col] != symbol) {
+            if (board[lastRow][col] != piece) {
                 rowWin = false;
                 break;
             }
@@ -223,7 +212,7 @@ public class TicTacToeController extends AbstractGameController {
         // Check column
         boolean colWin = true;
         for (int row = 0; row < BOARD_SIZE; row++) {
-            if (board[row][lastCol] != symbol) {
+            if (board[row][lastCol] != piece) {
                 colWin = false;
                 break;
             }
@@ -234,7 +223,7 @@ public class TicTacToeController extends AbstractGameController {
         if (lastRow == lastCol) {
             boolean diagWin = true;
             for (int i = 0; i < BOARD_SIZE; i++) {
-                if (board[i][i] != symbol) {
+                if (board[i][i] != piece) {
                     diagWin = false;
                     break;
                 }
@@ -246,7 +235,7 @@ public class TicTacToeController extends AbstractGameController {
         if (lastRow + lastCol == BOARD_SIZE - 1) {
             boolean antiDiagWin = true;
             for (int i = 0; i < BOARD_SIZE; i++) {
-                if (board[i][BOARD_SIZE - 1 - i] != symbol) {
+                if (board[i][BOARD_SIZE - 1 - i] != piece) {
                     antiDiagWin = false;
                     break;
                 }
