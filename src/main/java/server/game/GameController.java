@@ -78,6 +78,15 @@ public interface GameController {
     PlayerHandler getCurrentPlayer();
     
     /**
+     * Gets the piece assigned to a specific player.
+     * 
+     * @param player The player to get the piece for
+     * @return The character representing the player's piece
+     * @throws IllegalArgumentException if the player is not part of this game
+     */
+    char getPlayerPiece(PlayerHandler player);
+    
+    /**
      * Handles a message received from a player.
      * This method processes game-specific messages and commands.
      * It should:
