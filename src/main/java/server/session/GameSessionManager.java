@@ -85,10 +85,7 @@ public class GameSessionManager implements Runnable {
         for (PlayerHandler player : context.getParticipants()) {
             Map<String, Object> gameInfo = new HashMap<>();
             gameInfo.put("gameState", gameController.getGameState());
-            
-            if (gameController instanceof TicTacToeController) {
-                gameInfo.put("playerPiece", ((TicTacToeController)gameController).getPlayerPiece(player));
-            }
+            gameInfo.put("playerPiece", gameController.getPlayerPiece(player));
             
             sendMessageToPlayer(player, new ThreadMessage<Map<String, Object>>(MessageType.GAME_STATE_UPDATE, this, gameInfo));
         }
@@ -191,9 +188,7 @@ public class GameSessionManager implements Runnable {
         gameInfo.put("gameState", gameController.getGameState());
         
         for (PlayerHandler player : context.getParticipants()) {
-            if (gameController instanceof TicTacToeController) {
-                gameInfo.put("playerPiece", ((TicTacToeController)gameController).getPlayerPiece(player));
-            }
+            gameInfo.put("playerPiece", gameController.getPlayerPiece(player));
             sendMessageToPlayer(player, new ThreadMessage<Map<String, Object>>(MessageType.GAME_STATE_UPDATE, this, gameInfo));
         }
     }
