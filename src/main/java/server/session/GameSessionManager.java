@@ -3,6 +3,7 @@ package server.session;
 import server.game.GameController;
 import server.game.TicTacToeController;
 import server.game.ConnectFourController;
+import server.game.CheckersController;
 
 import server.player.PlayerHandler;
 import server.utility.GameType;
