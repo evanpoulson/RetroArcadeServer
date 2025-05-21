@@ -42,17 +42,14 @@ public abstract class AbstractGameController implements GameController {
     /** Flag indicating if the game is currently paused */
     protected boolean isPaused;
 
-    /** The game board, represented as a 2D array of characters */
-    protected char[][] board;
+    /** The game board, represented as a 2D array of pieces */
+    protected GamePiece[][] board;
     
     /** Map of players to their assigned pieces */
-    protected final Map<PlayerHandler, Character> playerPieces;
+    protected final Map<PlayerHandler, GamePiece> playerPieces;
     
     /** Counter for the number of moves made in the game */
     protected int moveCount;
-    
-    /** Character representing an empty cell */
-    protected static final char EMPTY = ' ';
 
     /**
      * Constructs a new game controller with the given set of players.
@@ -96,16 +93,16 @@ public abstract class AbstractGameController implements GameController {
     protected abstract void initializeBoard();
 
     /**
-     * Gets the piece character for player 1.
-     * Must be implemented by subclasses to define their piece characters.
+     * Gets the piece for player 1.
+     * Must be implemented by subclasses to define their piece types.
      */
-    protected abstract char getPlayer1Piece();
+    protected abstract GamePiece getPlayer1Piece();
 
     /**
-     * Gets the piece character for player 2.
-     * Must be implemented by subclasses to define their piece characters.
+     * Gets the piece for player 2.
+     * Must be implemented by subclasses to define their piece types.
      */
-    protected abstract char getPlayer2Piece();
+    protected abstract GamePiece getPlayer2Piece();
 
     /**
      * Assigns pieces to players.
@@ -211,7 +208,7 @@ public abstract class AbstractGameController implements GameController {
         if (!players.contains(player)) {
             throw new IllegalArgumentException("Player is not part of this game");
         }
-        return playerPieces.get(player);
+        return playerPieces.get(player).getSymbol();
     }
 
     /**
