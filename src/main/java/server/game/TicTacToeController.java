@@ -1,8 +1,6 @@
 package server.game;
 
 import server.player.PlayerHandler;
-import server.utility.ThreadMessage;
-import server.utility.MessageType;
 
 import java.util.Set;
 import java.util.HashMap;
