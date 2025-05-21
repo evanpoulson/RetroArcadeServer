@@ -25,8 +25,10 @@ import java.util.HashMap;
  * 2. Define game-specific win conditions
  * 3. Manage game-specific state
  * 4. Override methods as needed for game-specific behavior
+ * 
+ * @param <P> The type of game piece used by this controller, must extend GamePiece
  */
-public abstract class AbstractGameController implements GameController {
+public abstract class AbstractGameController<P extends GamePiece> implements GameController {
     /** The set of players participating in the game */
     protected final Set<PlayerHandler> players;
     
@@ -43,10 +45,10 @@ public abstract class AbstractGameController implements GameController {
     protected boolean isPaused;
 
     /** The game board, represented as a 2D array of pieces */
-    protected GamePiece[][] board;
+    protected P[][] board;
     
     /** Map of players to their assigned pieces */
-    protected final Map<PlayerHandler, GamePiece> playerPieces;
+    protected final Map<PlayerHandler, P> playerPieces;
     
     /** Counter for the number of moves made in the game */
     protected int moveCount;
@@ -96,13 +98,13 @@ public abstract class AbstractGameController implements GameController {
      * Gets the piece for player 1.
      * Must be implemented by subclasses to define their piece types.
      */
-    protected abstract GamePiece getPlayer1Piece();
+    protected abstract P getPlayer1Piece();
 
     /**
      * Gets the piece for player 2.
      * Must be implemented by subclasses to define their piece types.
      */
-    protected abstract GamePiece getPlayer2Piece();
+    protected abstract P getPlayer2Piece();
 
     /**
      * Assigns pieces to players.
