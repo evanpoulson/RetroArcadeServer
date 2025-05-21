@@ -25,30 +25,15 @@ import java.util.Map;
  * - Coordinates are 0-based (0-7 for both row and column)
  * - The top-left cell is [0,0], bottom-right is [7,7]
  */
-public class CheckersController extends AbstractGameController {
+public class CheckersController extends AbstractGameController<CheckersPiece> {
     /** The size of the game board (8x8) */
     private static final int BOARD_SIZE = 8;
     
-    /** The game board, represented as a 2D array of characters */
-    private char[][] board;
+    /** The game board, represented as a 2D array of pieces */
+    private CheckersPiece[][] board;
     
-    /** Character representing an empty cell */
-    private static final char EMPTY = ' ';
-    
-    /** Character representing player Red's regular piece */
-    private static final char RED = 'R';
-    
-    /** Character representing player Blue's regular piece */
-    private static final char BLUE = 'B';
-    
-    /** Character representing player Red's king piece */
-    private static final char RED_KING = 'K';
-    
-    /** Character representing player Blue's king piece */
-    private static final char BLUE_KING = 'Q';
-    
-    /** Map of players to their assigned pieces (R or B) */
-    private final Map<PlayerHandler, Character> playerPieces;
+    /** Map of players to their assigned pieces */
+    private final Map<PlayerHandler, CheckersPiece> playerPieces;
     
     /** Flag indicating if a multiple jump is in progress */
     private boolean isMultipleJump;
@@ -83,8 +68,8 @@ public class CheckersController extends AbstractGameController {
         
         // Assign pieces to players
         PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
-        playerPieces.put(playerArray[0], RED);
-        playerPieces.put(playerArray[1], BLUE);
+        playerPieces.put(playerArray[0], CheckersPiece.RED);
+        playerPieces.put(playerArray[1], CheckersPiece.BLUE);
     }
 
     /**
@@ -92,12 +77,12 @@ public class CheckersController extends AbstractGameController {
      */
     @Override
     protected void initializeBoard() {
-        board = new char[BOARD_SIZE][BOARD_SIZE];
+        board = new CheckersPiece[BOARD_SIZE][BOARD_SIZE];
         
         // Initialize empty board
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
-                board[i][j] = EMPTY;
+                board[i][j] = CheckersPiece.EMPTY;
             }
         }
         
@@ -105,7 +90,7 @@ public class CheckersController extends AbstractGameController {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 if ((i + j) % 2 == 1) {
-                    board[i][j] = RED;
+                    board[i][j] = CheckersPiece.RED;
                 }
             }
         }
@@ -114,26 +99,26 @@ public class CheckersController extends AbstractGameController {
         for (int i = 5; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
                 if ((i + j) % 2 == 1) {
-                    board[i][j] = BLUE;
+                    board[i][j] = CheckersPiece.BLUE;
                 }
             }
         }
     }
 
     /**
-     * Gets the piece character for player 1 (Red).
+     * Gets the piece for player 1 (Red).
      */
     @Override
-    protected char getPlayer1Piece() {
-        return RED;
+    protected CheckersPiece getPlayer1Piece() {
+        return CheckersPiece.RED;
     }
 
     /**
-     * Gets the piece character for player 2 (Blue).
+     * Gets the piece for player 2 (Blue).
      */
     @Override
-    protected char getPlayer2Piece() {
-        return BLUE;
+    protected CheckersPiece getPlayer2Piece() {
+        return CheckersPiece.BLUE;
     }
 
     /**
@@ -189,8 +174,8 @@ public class CheckersController extends AbstractGameController {
         }
 
         // Validate piece ownership
-        char piece = board[fromRow][fromCol];
-        if (piece == EMPTY || !isPlayerPiece(player, piece)) {
+        CheckersPiece piece = board[fromRow][fromCol];
+        if (piece.isEmpty() || !isPlayerPiece(player, piece)) {
             throw new IllegalArgumentException("Invalid piece selection");
         }
 
@@ -229,7 +214,7 @@ public class CheckersController extends AbstractGameController {
     /**
      * Gets the current state of the game board.
      * 
-     * @return The 2D char array representing the current board state
+     * @return The 2D array representing the current board state
      */
     @Override
     public Object getGameState() {
@@ -243,11 +228,12 @@ public class CheckersController extends AbstractGameController {
      * @return The character representing the player's piece (R or B)
      * @throws IllegalArgumentException if the player is not part of this game
      */
+    @Override
     public char getPlayerPiece(PlayerHandler player) {
         if (!players.contains(player)) {
             throw new IllegalArgumentException("Player is not part of this game");
         }
-        return playerPieces.get(player);
+        return playerPieces.get(player).getSymbol();
     }
 
     /**
@@ -268,11 +254,11 @@ public class CheckersController extends AbstractGameController {
      * @param piece The piece to check
      * @return true if the piece belongs to the player
      */
-    private boolean isPlayerPiece(PlayerHandler player, char piece) {
-        char playerPiece = getPlayerPiece(player);
+    private boolean isPlayerPiece(PlayerHandler player, CheckersPiece piece) {
+        CheckersPiece playerPiece = playerPieces.get(player);
         return piece == playerPiece || 
-               (playerPiece == RED && piece == RED_KING) ||
-               (playerPiece == BLUE && piece == BLUE_KING);
+               (playerPiece == CheckersPiece.RED && piece == CheckersPiece.RED_KING) ||
+               (playerPiece == CheckersPiece.BLUE && piece == CheckersPiece.BLUE_KING);
     }
 
     /**
@@ -286,11 +272,11 @@ public class CheckersController extends AbstractGameController {
      */
     private boolean isValidMove(int fromRow, int fromCol, int toRow, int toCol) {
         // Check if destination is empty
-        if (board[toRow][toCol] != EMPTY) {
+        if (!board[toRow][toCol].isEmpty()) {
             return false;
         }
 
-        char piece = board[fromRow][fromCol];
+        CheckersPiece piece = board[fromRow][fromCol];
         int rowDiff = toRow - fromRow;
         int colDiff = toCol - fromCol;
 
@@ -300,9 +286,10 @@ public class CheckersController extends AbstractGameController {
         }
 
         // Regular piece movement
-        if (piece == RED || piece == BLUE) {
+        if (piece == CheckersPiece.RED || piece == CheckersPiece.BLUE) {
             // Check direction (Red moves down, Blue moves up)
-            if ((piece == RED && rowDiff <= 0) || (piece == BLUE && rowDiff >= 0)) {
+            if ((piece == CheckersPiece.RED && rowDiff <= 0) || 
+                (piece == CheckersPiece.BLUE && rowDiff >= 0)) {
                 return false;
             }
 
@@ -315,12 +302,12 @@ public class CheckersController extends AbstractGameController {
             if (Math.abs(rowDiff) == 2) {
                 int jumpRow = fromRow + rowDiff / 2;
                 int jumpCol = fromCol + colDiff / 2;
-                char jumpedPiece = board[jumpRow][jumpCol];
-                return jumpedPiece != EMPTY && !isPlayerPiece(currentPlayer, jumpedPiece);
+                CheckersPiece jumpedPiece = board[jumpRow][jumpCol];
+                return !jumpedPiece.isEmpty() && !isPlayerPiece(currentPlayer, jumpedPiece);
             }
         }
         // King movement
-        else if (piece == RED_KING || piece == BLUE_KING) {
+        else if (piece == CheckersPiece.RED_KING || piece == CheckersPiece.BLUE_KING) {
             // Check if path is clear
             int rowStep = rowDiff > 0 ? 1 : -1;
             int colStep = colDiff > 0 ? 1 : -1;
@@ -329,8 +316,8 @@ public class CheckersController extends AbstractGameController {
             int capturedCount = 0;
 
             while (currentRow != toRow && currentCol != toCol) {
-                char currentPiece = board[currentRow][currentCol];
-                if (currentPiece != EMPTY) {
+                CheckersPiece currentPiece = board[currentRow][currentCol];
+                if (!currentPiece.isEmpty()) {
                     if (isPlayerPiece(currentPlayer, currentPiece) || capturedCount > 0) {
                         return false;
                     }
@@ -355,31 +342,31 @@ public class CheckersController extends AbstractGameController {
      * @param toCol Destination column
      */
     private void executeMove(int fromRow, int fromCol, int toRow, int toCol) {
-        char piece = board[fromRow][fromCol];
+        CheckersPiece piece = board[fromRow][fromCol];
         int rowDiff = toRow - fromRow;
         int colDiff = toCol - fromCol;
 
         // Handle regular piece movement
-        if (piece == RED || piece == BLUE) {
+        if (piece == CheckersPiece.RED || piece == CheckersPiece.BLUE) {
             // Check for jump
             if (Math.abs(rowDiff) == 2) {
                 // Remove captured piece
                 int jumpRow = fromRow + rowDiff / 2;
                 int jumpCol = fromCol + colDiff / 2;
-                board[jumpRow][jumpCol] = EMPTY;
+                board[jumpRow][jumpCol] = CheckersPiece.EMPTY;
             }
 
             // Move piece
             board[toRow][toCol] = piece;
 
             // Check for king promotion
-            if ((piece == RED && toRow == BOARD_SIZE - 1) || 
-                (piece == BLUE && toRow == 0)) {
-                board[toRow][toCol] = (piece == RED) ? RED_KING : BLUE_KING;
+            if ((piece == CheckersPiece.RED && toRow == BOARD_SIZE - 1) || 
+                (piece == CheckersPiece.BLUE && toRow == 0)) {
+                board[toRow][toCol] = piece.getKingVersion();
             }
         }
         // Handle king movement
-        else if (piece == RED_KING || piece == BLUE_KING) {
+        else if (piece == CheckersPiece.RED_KING || piece == CheckersPiece.BLUE_KING) {
             // Remove captured pieces along the path
             int rowStep = rowDiff > 0 ? 1 : -1;
             int colStep = colDiff > 0 ? 1 : -1;
@@ -387,8 +374,8 @@ public class CheckersController extends AbstractGameController {
             int currentCol = fromCol + colStep;
 
             while (currentRow != toRow && currentCol != toCol) {
-                if (board[currentRow][currentCol] != EMPTY) {
-                    board[currentRow][currentCol] = EMPTY;
+                if (!board[currentRow][currentCol].isEmpty()) {
+                    board[currentRow][currentCol] = CheckersPiece.EMPTY;
                 }
                 currentRow += rowStep;
                 currentCol += colStep;
@@ -399,7 +386,7 @@ public class CheckersController extends AbstractGameController {
         }
 
         // Clear original position
-        board[fromRow][fromCol] = EMPTY;
+        board[fromRow][fromCol] = CheckersPiece.EMPTY;
     }
 
     /**
@@ -410,7 +397,7 @@ public class CheckersController extends AbstractGameController {
      * @return true if additional jumps are available
      */
     private boolean hasAdditionalJumps(int row, int col) {
-        char piece = board[row][col];
+        CheckersPiece piece = board[row][col];
         int[][] directions = {{-2, -2}, {-2, 2}, {2, -2}, {2, 2}};
 
         for (int[] dir : directions) {
@@ -446,7 +433,7 @@ public class CheckersController extends AbstractGameController {
 
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
-                char piece = board[i][j];
+                CheckersPiece piece = board[i][j];
                 if (isPlayerPiece(opponent, piece)) {
                     hasPieces = true;
                     // Check if piece can move
@@ -472,14 +459,14 @@ public class CheckersController extends AbstractGameController {
      * @return true if the piece can move
      */
     private boolean canPieceMove(int row, int col) {
-        char piece = board[row][col];
+        CheckersPiece piece = board[row][col];
         int[][] directions;
 
-        if (piece == RED_KING || piece == BLUE_KING) {
+        if (piece.isKing()) {
             directions = new int[][]{{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
         } else {
             directions = new int[][]{{-1, -1}, {-1, 1}};
-            if (piece == BLUE) {
+            if (piece == CheckersPiece.BLUE) {
                 directions = new int[][]{{1, -1}, {1, 1}};
             }
         }

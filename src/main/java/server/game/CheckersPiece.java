@@ -3,7 +3,7 @@ package server.game;
 /**
  * Enum representing the possible pieces in a Checkers game.
  */
-public enum CheckersPiece {
+public enum CheckersPiece implements GamePiece {
     RED('R'),
     BLUE('B'),
     RED_KING('K'),
@@ -16,8 +16,14 @@ public enum CheckersPiece {
         this.symbol = symbol;
     }
 
+    @Override
     public char getSymbol() {
         return symbol;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this == EMPTY;
     }
 
     public boolean isKing() {
