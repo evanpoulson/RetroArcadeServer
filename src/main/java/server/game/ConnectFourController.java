@@ -23,27 +23,18 @@ import java.util.Map;
  * - The leftmost column is 0, rightmost is 6
  * - The bottom row is 0, top row is 5
  */
-public class ConnectFourController extends AbstractGameController {
+public class ConnectFourController extends AbstractGameController<ConnectFourPiece> {
     /** The number of rows in the game board */
     private static final int ROWS = 6;
     
     /** The number of columns in the game board */
     private static final int COLS = 7;
     
-    /** The game board, represented as a 2D array of characters */
-    private char[][] board;
-    
-    /** Character representing an empty cell */
-    private static final char EMPTY = ' ';
-    
-    /** Character representing player Red's piece */
-    private static final char RED = 'R';
-    
-    /** Character representing player Blue's piece */
-    private static final char BLUE = 'B';
+    /** The game board, represented as a 2D array of pieces */
+    private ConnectFourPiece[][] board;
     
     /** Map of players to their assigned pieces (R or B) */
-    private final Map<PlayerHandler, Character> playerPieces;
+    private final Map<PlayerHandler, ConnectFourPiece> playerPieces;
 
     /**
      * Constructs a new Connect Four game controller.
@@ -67,16 +58,12 @@ public class ConnectFourController extends AbstractGameController {
     public void initializeGame() {
         super.initializeGame();
         // Initialize empty board
-        for (int i = 0; i < ROWS; i++) {
-            for (int j = 0; j < COLS; j++) {
-                board[i][j] = EMPTY;
-            }
-        }
+        initializeBoard();
         
         // Assign pieces to players
         PlayerHandler[] playerArray = players.toArray(new PlayerHandler[0]);
-        playerPieces.put(playerArray[0], RED);
-        playerPieces.put(playerArray[1], BLUE);
+        playerPieces.put(playerArray[0], ConnectFourPiece.RED);
+        playerPieces.put(playerArray[1], ConnectFourPiece.BLUE);
     }
 
     /**
@@ -85,28 +72,28 @@ public class ConnectFourController extends AbstractGameController {
      */
     @Override
     protected void initializeBoard() {
-        board = new char[ROWS][COLS];
+        board = new ConnectFourPiece[ROWS][COLS];
         for (int i = 0; i < ROWS; i++) {
             for (int j = 0; j < COLS; j++) {
-                board[i][j] = EMPTY;
+                board[i][j] = ConnectFourPiece.EMPTY;
             }
         }
     }
 
     /**
-     * Gets the piece character for player 1 (Red).
+     * Gets the piece for player 1 (Red).
      */
     @Override
-    protected char getPlayer1Piece() {
-        return RED;
+    protected ConnectFourPiece getPlayer1Piece() {
+        return ConnectFourPiece.RED;
     }
 
     /**
-     * Gets the piece character for player 2 (Blue).
+     * Gets the piece for player 2 (Blue).
      */
     @Override
-    protected char getPlayer2Piece() {
-        return BLUE;
+    protected ConnectFourPiece getPlayer2Piece() {
+        return ConnectFourPiece.BLUE;
     }
 
     /**
@@ -152,7 +139,7 @@ public class ConnectFourController extends AbstractGameController {
         }
 
         // Check if column is full
-        if (board[0][column] != EMPTY) {
+        if (board[0][column] != ConnectFourPiece.EMPTY) {
             throw new IllegalArgumentException("Column is full");
         }
 
@@ -160,7 +147,8 @@ public class ConnectFourController extends AbstractGameController {
         int row = findLowestEmptyRow(column);
         
         // Make the move
-        board[row][column] = getPlayerPiece(player);
+        board[row][column] = playerPieces.get(player);
+        incrementMoveCount();
 
         // Check for win or draw
         if (checkWin(row, column)) {
@@ -177,7 +165,7 @@ public class ConnectFourController extends AbstractGameController {
     /**
      * Gets the current state of the game board.
      * 
-     * @return The 2D char array representing the current board state
+     * @return The 2D array representing the current board state
      */
     @Override
     public Object getGameState() {
@@ -191,11 +179,12 @@ public class ConnectFourController extends AbstractGameController {
      * @return The character representing the player's piece (R or B)
      * @throws IllegalArgumentException if the player is not part of this game
      */
+    @Override
     public char getPlayerPiece(PlayerHandler player) {
         if (!players.contains(player)) {
             throw new IllegalArgumentException("Player is not part of this game");
         }
-        return playerPieces.get(player);
+        return playerPieces.get(player).getSymbol();
     }
 
     /**
@@ -206,7 +195,7 @@ public class ConnectFourController extends AbstractGameController {
      */
     private int findLowestEmptyRow(int column) {
         for (int row = ROWS - 1; row >= 0; row--) {
-            if (board[row][column] == EMPTY) {
+            if (board[row][column] == ConnectFourPiece.EMPTY) {
                 return row;
             }
         }
@@ -222,12 +211,12 @@ public class ConnectFourController extends AbstractGameController {
      * @return true if the last move resulted in a win
      */
     private boolean checkWin(int lastRow, int lastCol) {
-        char symbol = board[lastRow][lastCol];
+        ConnectFourPiece piece = board[lastRow][lastCol];
 
         // Check horizontal
         int count = 0;
         for (int col = Math.max(0, lastCol - 3); col <= Math.min(COLS - 1, lastCol + 3); col++) {
-            if (board[lastRow][col] == symbol) {
+            if (board[lastRow][col] == piece) {
                 count++;
                 if (count == 4) return true;
             } else {
@@ -238,7 +227,7 @@ public class ConnectFourController extends AbstractGameController {
         // Check vertical
         count = 0;
         for (int row = Math.max(0, lastRow - 3); row <= Math.min(ROWS - 1, lastRow + 3); row++) {
-            if (board[row][lastCol] == symbol) {
+            if (board[row][lastCol] == piece) {
                 count++;
                 if (count == 4) return true;
             } else {
@@ -252,7 +241,7 @@ public class ConnectFourController extends AbstractGameController {
             int row = lastRow + i;
             int col = lastCol + i;
             if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
-                if (board[row][col] == symbol) {
+                if (board[row][col] == piece) {
                     count++;
                     if (count == 4) return true;
                 } else {
@@ -267,7 +256,7 @@ public class ConnectFourController extends AbstractGameController {
             int row = lastRow + i;
             int col = lastCol - i;
             if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
-                if (board[row][col] == symbol) {
+                if (board[row][col] == piece) {
                     count++;
                     if (count == 4) return true;
                 } else {
