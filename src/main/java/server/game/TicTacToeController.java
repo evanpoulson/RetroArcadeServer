@@ -186,28 +186,6 @@ public class TicTacToeController extends AbstractGameController {
     }
 
     /**
-     * Handles a message received from a player.
-     * Currently only processes MOVE_MADE messages.
-     * 
-     * @param message The message to process
-     * @return true if the message was handled successfully, false otherwise
-     */
-    @Override
-    public boolean handleMessage(ThreadMessage<?> message) {
-        if (message.getType() != MessageType.MOVE_MADE) {
-            return false;
-        }
-
-        try {
-            return processMove(message.getPlayerSender(), message.getData());
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            // Log the error
-            System.err.println("Error processing move: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
      * Gets the piece assigned to a specific player.
      * 
      * @param player The player to get the piece for
